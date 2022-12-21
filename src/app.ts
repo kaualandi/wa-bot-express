@@ -1,4 +1,4 @@
-import { STATE, create, Client } from "@open-wa/wa-automate";
+import { STATE, create, Client, ContactId } from "@open-wa/wa-automate";
 import { Request, Response, Router } from "express";
 import options from "./config/options";
 require("dotenv").config();
@@ -44,6 +44,22 @@ const start = async (client: Client) => {
       return;
     }
 
+    const userHasWA = await client.checkNumberStatus(`${number}@c.us` as ContactId);
+
+    if (userHasWA.status === 404) {
+      console.log(`Usuário ${number} não possui WhatsApp!`);
+      res.status(400).json({
+        worked: false,
+        detail: "O número informado não possui WhatsApp!",
+        response: userHasWA,
+        message,
+        number,
+      });
+      return;
+    }
+
+    console.log('userHasWA', userHasWA);
+
     let sended;
 
     if (image) {
@@ -57,7 +73,7 @@ const start = async (client: Client) => {
 
     if (!sended.toString().startsWith("true")) {
       console.log(`Erro ao enviar mensagem para ${number}!`);
-      res.status(500).json({
+      res.status(400).json({
         worked: false,
         detail: "Erro ao enviar mensagem!",
         response: sended,
