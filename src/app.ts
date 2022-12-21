@@ -52,7 +52,10 @@ const start = async (client: Client) => {
       sended = await client.sendText(`${number}@c.us`, message);
     }
 
-    if (!sended) {
+    console.log(sended);
+    
+
+    if (!sended.toString().startsWith("true")) {
       console.log(`Erro ao enviar mensagem para ${number}!`);
       res.status(500).json({
         worked: false,
