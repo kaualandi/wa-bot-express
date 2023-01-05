@@ -8,6 +8,10 @@ const app = express();
 app.use(express.json());
 const port = process.env.PORT || 80;
 
+const defaultMessage = `Olá, tudo bem ? 😃\n
+Ainda não estamos realizando atendimento via Whatsapp por este canal.\n
+Caso tenha alguma dúvida, por favor entrar em contato pelo nosso chat, localizado no site. 💬`
+
 const start = async (client: Client) => {
   console.log("\x1b[1;32m✓ USING:", process.env.USING, "\x1b[0m");
   console.log("\x1b[1;32m✓ NUMBER:", await client.getHostNumber(), "\x1b[0m");
@@ -16,6 +20,14 @@ const start = async (client: Client) => {
   client.onStateChanged((state: STATE) => {
     console.log("[Status do cliente]", state);
     if (state === "CONFLICT" || state === "UNLAUNCHED") client.forceRefocus();
+  });
+
+  client.onMessage((message) => {
+    if (message.body === "!ping") {
+      client.sendText(message.from, "pong");
+    } else {
+      client.sendText(message.from, defaultMessage);
+    }
   });
 
   app.use(client.middleware(true));
