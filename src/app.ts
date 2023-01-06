@@ -8,9 +8,10 @@ const app = express();
 app.use(express.json());
 const port = process.env.PORT || 80;
 
-const defaultMessage = `Olá, tudo bem ? 😃\n
+const defaultMessage = `Olá, tudo bem? 😃\n
 Ainda não estamos realizando atendimento via Whatsapp por este canal.\n
-Caso tenha alguma dúvida, por favor entrar em contato pelo nosso chat, localizado no site. 💬`
+Caso tenha alguma dúvida ou precise entrar em contato com a central de ajuda do Grupo 4 Mares, clique no link a baixo. ⬇️\n
+https://wa.me/559221257820`;
 
 const start = async (client: Client) => {
   console.log("\x1b[1;32m✓ USING:", process.env.USING, "\x1b[0m");
