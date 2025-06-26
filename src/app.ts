@@ -1,17 +1,15 @@
 import { STATE, create, Client, ContactId } from "@open-wa/wa-automate";
 import { Request, Response, Router } from "express";
+
 import options from "./config/options";
+
+
 require("dotenv").config();
 
 const express = require("express");
 const app = express();
 app.use(express.json());
 const port = process.env.PORT || 80;
-
-const defaultMessage = `Olá, tudo bem? 😃\n
-Ainda não estamos realizando atendimento via Whatsapp por este canal.\n
-Caso tenha alguma dúvida ou precise entrar em contato com a central de ajuda do Grupo 4 Mares, clique no link a baixo. ⬇️\n
-https://wa.me/559221257820`;
 
 const start = async (client: Client) => {
   console.log("\x1b[1;32m✓ USING:", process.env.USING, "\x1b[0m");
@@ -23,11 +21,10 @@ const start = async (client: Client) => {
     if (state === "CONFLICT" || state === "UNLAUNCHED") client.forceRefocus();
   });
 
-  client.onMessage((message) => {
+  client.onMessage(async (message) => {
+    console.log("[Mensagem recebida]", message.chatId, message.body);
     if (message.body === "!ping") {
-      client.sendText(message.from, "pong");
-    } else {
-      client.sendText(message.from, defaultMessage);
+      await client.sendText(message.chatId, "Pong!");
     }
   });
 
@@ -57,35 +54,53 @@ const start = async (client: Client) => {
       return;
     }
 
-    const userHasWA = await client.checkNumberStatus(`${number}@c.us` as ContactId);
-
-    if (userHasWA.status === 404) {
-      console.log(`Usuário ${number} não possui WhatsApp!`);
-      res.status(400).json({
-        worked: false,
-        detail: "O número informado não possui WhatsApp!",
-        response: userHasWA,
-        message,
-        number,
-      });
-      return;
+    let chatId = '' as ContactId;
+    if (number.endsWith("@g.us")) {
+      chatId = number;
+      console.log(`Número recebido é um grupo: ${number}`);
+      const group = await client.getGroupInfo(number);
+      console.log(`Informações do grupo: ${JSON.stringify(group)}`);
+      if (!group?.title) {
+        res.status(400).json({
+          worked: false,
+          detail: "O número informado é um grupo inválido!",
+          response: null,
+          message,
+          number,
+        });
+        return;
+      }
+    } else {
+      chatId = `${number}@c.us` as ContactId;
+      const userHasWA = await client.checkNumberStatus(chatId);
+      if (userHasWA.status === 404) {
+        console.log(`Usuário ${chatId} não possui WhatsApp!`);
+        res.status(400).json({
+          worked: false,
+          detail: "O número informado não possui WhatsApp!",
+          response: userHasWA,
+          message,
+          number,
+        });
+        return;
+      }
+      console.log('userHasWA', userHasWA);
     }
 
-    console.log('userHasWA', userHasWA);
 
     let sended;
 
     if (image) {
-      sended = await client.sendImage(`${number}@c.us`, image, "image", message);
+      sended = await client.sendImage(chatId, image, "image", message);
     } else {
-      sended = await client.sendText(`${number}@c.us`, message);
+      sended = await client.sendText(chatId, message);
     }
 
     console.log(sended);
     
 
     if (!sended.toString().startsWith("true")) {
-      console.log(`Erro ao enviar mensagem para ${number}!`);
+      console.log(`Erro ao enviar mensagem para ${chatId}!`);
       res.status(400).json({
         worked: false,
         detail: "Erro ao enviar mensagem!",
@@ -94,7 +109,7 @@ const start = async (client: Client) => {
         number,
       });
     } else {
-      console.log(`Mensagem enviada com sucesso para ${number}!`);
+      console.log(`Mensagem enviada com sucesso para ${chatId}!`);
       res.status(200).json({
         worked: true,
         detail: "Mensagem enviada com sucesso!",
