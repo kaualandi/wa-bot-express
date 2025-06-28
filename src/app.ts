@@ -120,6 +120,15 @@ const start = async (client: Client) => {
     }
   });
 
+  app.get("/groups", async (req: Request, res: Response) => {
+    const groups = await client.getAllGroups();
+    res.status(200).json({
+      worked: true,
+      detail: "Grupos obtidos com sucesso!",
+      response: groups,
+    });
+  });
+
   return client;
 };
 
